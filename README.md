@@ -9,6 +9,8 @@ A collection of production-ready examples for the [GL Observability](https://git
 - Python 3.11–3.13
 - [uv](https://docs.astral.sh/uv/) package manager
 - Docker (required for OTLP / Jaeger examples)
+- **Sentry DSN**: Can be created in Sentry. If you don't have access to Sentry, please ask the **infra team**.
+- **NER API Key**: Required for the NER API based masking. Please request this API key for staging from the **NER API team**.
 
 ### Setup
 
@@ -129,7 +131,7 @@ Masks PII using a Named Entity Recognition (NER) API. Calls an external API to d
 uv run python logs/pii_ner_api_based.py
 ```
 
-**Required env vars:** `NER_API_URL`
+**Required env vars:** `NER_API_URL`, `NER_API_KEY`
 
 ---
 
@@ -143,3 +145,4 @@ uv run python logs/pii_ner_api_based.py
 | `OTLP_ENDPOINT` | OTLP HTTP endpoint (e.g. `http://localhost:4318/v1/traces`) | OTLP example |
 | `PROJECT_NAME` | Service / project name | OTLP example, Sampler |
 | `NER_API_URL` | NER API endpoint for PII detection | NER PII example |
+| `NER_API_KEY` | API Key for NER API authentication | NER PII example |
