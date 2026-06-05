@@ -6,14 +6,16 @@ import os
 load_dotenv()
 
 api_url = os.getenv("NER_API_URL")
+api_key = os.getenv("NER_API_KEY")
 
 logger_name = "pii_ner_api_logger"
 
 init_ner_pii_logging_handler(
     logger_name=logger_name,
     api_url=api_url,
+    api_key=api_key,
     api_field="text",
-    pii_ner_process_enabled=True
+    pii_ner_process_enabled=True,
 )
 
 logger = logging.getLogger(logger_name)
