@@ -8,6 +8,8 @@ from mylib.file_storage.base import File, FileMetadata, FileStorage
 from mylib.observability.config import config
 from mylib.observability.tracer import get_tracer
 from opentelemetry.trace import Span, Status, StatusCode
+from opentelemetry.semconv.attributes import error_attributes as ErrorAttributes
+from opentelemetry.semconv._incubating.attributes import file_attributes as FileAttributes
 
 tracer = get_tracer()
 
@@ -20,12 +22,12 @@ def _key_attributes(key: str) -> dict[str, Any]:
     key are opt-in.
     """
     key_obj = PurePosixPath(key)
-    attributes: dict[str, Any] = {"file.directory": str(key_obj.parent)}
+    attributes: dict[str, Any] = {FileAttributes.FILE_DIRECTORY: str(key_obj.parent)}
     if key_obj.suffix:
-        attributes["file.extension"] = key_obj.suffix.lstrip(".")
+        attributes[FileAttributes.FILE_EXTENSION] = key_obj.suffix.lstrip(".")
     if config.capture_file_names:
-        attributes["file.name"] = key_obj.name
-        attributes["file.path"] = key
+        attributes[FileAttributes.FILE_NAME] = key_obj.name
+        attributes[FileAttributes.FILE_PATH] = key
     return attributes
 
 
@@ -65,13 +67,13 @@ class S3FileStorage(FileStorage):
                 self._record_failure(span, error)
                 raise
 
-            span.set_attribute("file.size", file.metadata.size)
+            span.set_attribute(FileAttributes.FILE_SIZE, file.metadata.size)
             return file
 
     def write(self, path: str, file: File) -> None:
         """Write a file to the storage."""
         attributes = self._operation_attributes("write", path)
-        attributes["file.size"] = len(file.content)
+        attributes[FileAttributes.FILE_SIZE] = len(file.content)
 
         with tracer.start_as_current_span("write file", attributes=attributes) as span:
             mime_type = file.metadata.mime_type
@@ -101,7 +103,7 @@ class S3FileStorage(FileStorage):
             attributes={
                 "mylib.file_storage.operation": "list",
                 "mylib.file_storage.storage_type": self._STORAGE_TYPE,
-                "file.directory": prefix.rstrip("/"),
+                FileAttributes.FILE_DIRECTORY: prefix.rstrip("/"),
             },
         ) as span:
             try:
@@ -124,7 +126,7 @@ class S3FileStorage(FileStorage):
         ) as span:
             try:
                 head = self._client.head_object(Bucket=self._bucket, Key=path)
-                span.set_attribute("file.size", head["ContentLength"])
+                span.set_attribute(FileAttributes.FILE_SIZE, head["ContentLength"])
             except Exception:
                 pass
 
@@ -149,7 +151,7 @@ class S3FileStorage(FileStorage):
         because span events are being deprecated in favour of logs.
         """
         span.set_status(Status(StatusCode.ERROR, str(error)))
-        span.set_attribute("error.type", type(error).__qualname__)
+        span.set_attribute(ErrorAttributes.ERROR_TYPE, type(error).__qualname__)
 
     def _list_keys(self, prefix: str) -> "list[str]":
         """Page through every object key under ``prefix``, directories aside."""
